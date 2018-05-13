@@ -132,10 +132,10 @@ struct timeval tv;
     temp=0;
     temp1=0;
     temp2=0;
-    #pragma omp parallel for shared(temp) private(i,j)
+    
+    #pragma omp parallel for reduction(+:temp) private(i,j)
     for(int i=0;i<N;i++){
           for(int j=0;j<N;j++){
-              #pragma omp critical(sumaX)
                 temp+=B[i*N+j];
             }
     }
@@ -160,11 +160,10 @@ struct timeval tv;
     ul=u*l;
     printf("Los valores son b = %f0.0 , u=%f0.0 , l = %f0.0 , ul=%f0.0",b,u,l,ul);
 
-    #pragma omp parallel for private(i,j,k)
+    #pragma omp for nowait schedule(dynamic,T)
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             for(k = 0;k<N;k++){
-                #pragma omp critical(p1)
                 ulAAtrans[i*N+j]+=ul*A[i*N+k]*A2[k*N+j];
             }
         }
@@ -192,42 +191,38 @@ struct timeval tv;
         }
     }
 
-    #pragma omp parallel for private(i,j,k)
+    #pragma omp for nowait schedule(dynamic,T)
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             for(k = 0;k<N;k++){
-              #pragma omp critical(p2)
               parcialC[i*N+j] += b*ulAAtrans[i*N+k]*C[k*N+j];            
             }
         }
     }
 
-    #pragma omp parallel for private(i,j,k)
+    #pragma omp for nowait schedule(dynamic,T)
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             for(k = 0;k<N;k++){
-              #pragma omp critical(p3)
               BE[i*N+j] += bL[i*N+k]*E[k*N+j];
             }
         }
     }
 
-    #pragma omp parallel for private(i,j,k)
+#pragma omp for nowait schedule(dynamic,T)
      for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             for(k = 0;k<N;k++){
-              #pragma omp critical(p4)
               UF[i*N+j] += bD[i*N+k]*F[k*N+j];
             }
         }
     }
 
     //Resultado Final
-    #pragma omp parallel for private(i,j,k)
+    #pragma omp for nowait schedule(dynamic,T)
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             for(k = 0;k<N;k++){
-                #pragma omp critical(p5)
                 M[i*N+j] = parcialC[i*N+j]+BE[i*N+j]+UF[i*N+j];
             }
         }
