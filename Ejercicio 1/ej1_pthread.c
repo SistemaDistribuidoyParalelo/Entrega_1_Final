@@ -66,7 +66,7 @@ int main(int argc,char*argv[]){
    if (pthread_barrier_init(&p1,NULL,T) != 0){
         printf("\n Barrera Fallo\n");
     }
-    
+
  //Aloca memoria para las matrices
  A=(double*)malloc(sizeof(double)*N*N);
  A2=(double*)malloc(sizeof(double)*N*N);
@@ -98,9 +98,20 @@ num=1;
   timetick = tv.tv_sec + tv.tv_usec/1000000.0;
   printf("Tiempo en segundos %f\n", timetick - sec);
 
- 
+ //Verifica el resultado  LO SACARIA
+  /*for(i=0;i<N;i++){
+   for(j=0;j<N;j++){
+	check=check&&(getValor(R,i,j,ORDENXCOLUMNAS)==N);
+   }
+  }
+
+  if(check){
+   printf("Multiplicacion de matrices resultado correcto\n");
+  }else{
+   printf("Multiplicacion de matrices resultado erroneo\n");
+  }
+*/
   //Como sabemos que es por columnas el resultado, lo imprimimos y recorremos d tal forma
-  imprimeMatriz(R,N);
   free(A);
   free(A2);
   free(R);

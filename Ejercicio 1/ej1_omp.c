@@ -106,7 +106,6 @@ printf("Tiempo en segundos %f\n", timetick - sec);
   }
 
   //Como sabemos que es por columnas el resultado, lo imprimimos y recorremos d tal forma
-  imprimeMatriz(R,N);
   free(A);
   free(A2);
   free(R);

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include<omp.h> 
+#include<omp.h>
 
 //declaracion de variables
 
@@ -19,14 +19,6 @@ double sec;
 struct timeval tv;
 //DECLARACION DE FUNCIONES UTILIZADAS EN EL PROGRAMA
 
-double dwalltime(){ // FUNCION PARA CALCULAR EL TIEMPO
-        double sec;
-        struct timeval tv;
-
-        gettimeofday(&tv,NULL);
-        sec = tv.tv_sec + tv.tv_usec/1000000.0;
-        return sec;
-}
 
 
 void imprimeMatriz(double *S, int tipo_fc) {
@@ -92,7 +84,7 @@ struct timeval tv;
     BE=(double*)malloc(sizeof(double)*N*N);
     bD=(double*)malloc(sizeof(double)*N*N);
     UF=(double*)malloc(sizeof(double)*N*N);
-    
+
     omp_set_num_threads(T);
     //double num = 0;
     //INICIALIZACION DE LAS MATRICES
@@ -128,11 +120,12 @@ struct timeval tv;
 			}
      }
     }
-
+    gettimeofday(&tv,NULL);
+    sec = tv.tv_sec + tv.tv_usec/1000000.0;
     temp=0;
     temp1=0;
     temp2=0;
-    
+
     #pragma omp parallel for reduction(+:temp) private(i,j)
     for(int i=0;i<N;i++){
           for(int j=0;j<N;j++){
@@ -158,7 +151,6 @@ struct timeval tv;
     u=(temp1/(N*N));
     l=(temp2/(N*N));
     ul=u*l;
-    printf("Los valores son b = %f0.0 , u=%f0.0 , l = %f0.0 , ul=%f0.0",b,u,l,ul);
 
     #pragma omp for nowait schedule(dynamic,T)
     for(int i=0;i<N;i++){
@@ -168,25 +160,25 @@ struct timeval tv;
             }
         }
     }
-    
+
     //L es inferior, recorrido parcial
     #pragma omp for nowait schedule(dynamic,T)
-    for(int i=0;i<N;i++){    
+    for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             for(k = 0;k<i+1;k++){
                 bL[i*N+j] +=b*L[k+((i*(i+1)/2))]*B[j*N+k];
             }
-    
+
         }
     }
-    
+
     //U es superior
     #pragma omp for nowait schedule(dynamic,T)
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             for(k = 0;k<j+1;k++){
               bD[i*N+j] +=b*D[i*N+k]*U[k+((j*(j+1))/2)];
-    
+
             }
         }
     }
@@ -195,7 +187,7 @@ struct timeval tv;
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             for(k = 0;k<N;k++){
-              parcialC[i*N+j] += b*ulAAtrans[i*N+k]*C[k*N+j];            
+              parcialC[i*N+j] += b*ulAAtrans[i*N+k]*C[k*N+j];
             }
         }
     }
@@ -227,10 +219,10 @@ struct timeval tv;
             }
         }
      }
-   
-printf("\nResultado final");
-   
-imprimeMatriz(M,1);
+     gettimeofday(&tv,NULL);
+     timetick = tv.tv_sec + tv.tv_usec/1000000.0;
+      printf("Tiempo en segundos %f\n", timetick - sec);
+
 free(A);
 free(B);
 free(C);

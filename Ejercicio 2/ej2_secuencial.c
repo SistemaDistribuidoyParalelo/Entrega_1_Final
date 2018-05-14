@@ -19,14 +19,7 @@ double sec;
 struct timeval tv;
 //DECLARACION DE FUNCIONES UTILIZADAS EN EL PROGRAMA
 
-double dwalltime(){ // FUNCION PARA CALCULAR EL TIEMPO
-        double sec;
-        struct timeval tv;
 
-        gettimeofday(&tv,NULL);
-        sec = tv.tv_sec + tv.tv_usec/1000000.0;
-        return sec;
-}
 
 
 void imprimeMatriz(double *S, int tipo_fc) {
@@ -80,9 +73,11 @@ int main(int argc,char*argv[]){
     BE=(double*)malloc(sizeof(double)*N*N);
     bD=(double*)malloc(sizeof(double)*N*N);
     UF=(double*)malloc(sizeof(double)*N*N);
-    
+
     //double num = 0;
     //INICIALIZACION DE LAS MATRICES
+    gettimeofday(&tv,NULL);
+    sec = tv.tv_sec + tv.tv_usec/1000000.0;
     for(i=0;i<N;i++){
      for(j=0;j<N;j++){
         ulAAtrans[i*N+j]=0;
@@ -132,16 +127,16 @@ int main(int argc,char*argv[]){
 			printf("U[%d] = %f\n", j+((i*(i+1))/2), U[j+((i*(i+1))/2)]);
 		}
 	}
-  
+
        printf("\n");
-  
+
    for (i = 0; i < N; i++){
 		for (j = 0; j < i+1; j++)
 		{
 			printf("L[%d] = %f\n", j+((i*(i+1))/2), L[j+((i*(i+1))/2)]);
 		}
 	}
-  
+
        printf("\n");
     */
 
@@ -151,7 +146,7 @@ int main(int argc,char*argv[]){
     temp=0;
     temp1=0;
     temp2=0;
-    
+
     for(int i=0;i<N;i++){
           for(int j=0;j<N;j++){
               temp+=B[i*N+j];
@@ -175,7 +170,6 @@ int main(int argc,char*argv[]){
     u=(temp1/(N*N));
     l=(temp2/(N*N));
     ul=u*l;
-    printf("Los valores son b = %f0.0 , u=%f0.0 , l = %f0.0 , ul=%f0.0",b,u,l,ul);
 
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
@@ -184,23 +178,23 @@ int main(int argc,char*argv[]){
             }
         }
     }
-    
+
     //L es inferior, recorrido parcial
-    for(int i=0;i<N;i++){    
+    for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             for(k = 0;k<i+1;k++){
                 bL[i*N+j] +=b*L[k+((i*(i+1)/2))]*B[j*N+k];
             }
-    
+
         }
     }
-    
+
     //U es superior
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             for(k = 0;k<j+1;k++){
               bD[i*N+j] +=b*D[i*N+k]*U[k+((j*(j+1))/2)];
-    
+
             }
         }
     }
@@ -208,7 +202,7 @@ int main(int argc,char*argv[]){
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             for(k = 0;k<N;k++){
-              parcialC[i*N+j] += ulAAtrans[i*N+k]*C[k*N+j];            
+              parcialC[i*N+j] += b*ulAAtrans[i*N+k]*C[k*N+j];
             }
         }
     }
@@ -237,10 +231,10 @@ int main(int argc,char*argv[]){
             }
         }
      }
-   
-printf("\nResultado final");
-   
-imprimeMatriz(M,1);
+     gettimeofday(&tv,NULL);
+     timetick = tv.tv_sec + tv.tv_usec/1000000.0;
+      printf("Tiempo en segundos %f\n", timetick - sec);
+
 free(A);
 free(B);
 free(C);

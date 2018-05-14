@@ -31,15 +31,6 @@ pthread_mutex_t p7;
 
 //DECLARACION DE FUNCIONES UTILIZADAS EN EL PROGRAMA
 
-double dwalltime(){ // FUNCION PARA CALCULAR EL TIEMPO
-        double sec;
-        struct timeval tv;
-
-        gettimeofday(&tv,NULL);
-        sec = tv.tv_sec + tv.tv_usec/1000000.0;
-        return sec;
-}
-
 
 void imprimeMatriz(double *S, int tipo_fc) {
 // Imprime la matriz pasada por parametro
@@ -68,13 +59,13 @@ void *procesoFuncion(void *arg){
     int parcial, inicio;
     int i,k,j;
     int ID = *(int*)arg;
-    
-    printf("el ID = %d \n",ID );
+
+    //printf("el ID = %d \n",ID );
     inicio = ((N)/T) * (ID);
     parcial = ((N)/T) * (ID +1);
-    printf("el Inicio = %d \n",inicio );
-    printf("el Parcial = %d \n",parcial );
-    
+    //printf("el Inicio = %d \n",inicio );
+  //  printf("el Parcial = %d \n",parcial );
+
 
 pthread_mutex_lock(&p1);
     for(i=inicio;i<parcial;i++){
@@ -85,26 +76,26 @@ pthread_mutex_lock(&p1);
         }
     }
 pthread_mutex_unlock(&p1);
-    
+
     //L es inferior, recorrido parcial
 pthread_mutex_lock(&p2);
-    for(i=inicio;i<parcial;i++){    
+    for(i=inicio;i<parcial;i++){
         for(j=0;j<N;j++){
             for(k = 0;k<i+1;k++){
                 bL[i*N+j] +=b*L[k+((i*(i+1)/2))]*B[j*N+k];
             }
-    
+
         }
     }
     pthread_mutex_unlock(&p2);
-    
+
     //U es superior
 pthread_mutex_lock(&p3);
     for(i=inicio;i<parcial;i++){
         for(j=0;j<N;j++){
             for(k = 0;k<j+1;k++){
               bD[i*N+j] +=b*D[i*N+k]*U[k+((j*(j+1))/2)];
-    
+
             }
         }
     }
@@ -113,7 +104,7 @@ pthread_mutex_lock(&p4);
     for(i=inicio;i<parcial;i++){
         for(j=0;j<N;j++){
             for(k = 0;k<N;k++){
-              parcialC[i*N+j] += b*ulAAtrans[i*N+k]*C[k*N+j];            
+              parcialC[i*N+j] += b*ulAAtrans[i*N+k]*C[k*N+j];
             }
         }
     }
@@ -146,7 +137,7 @@ pthread_mutex_unlock(&p6);
         }
      }
      pthread_mutex_unlock(&p7);
-    printf("Termino el Hilo d ejecucion unico\n");
+  //  printf("Termino el Hilo d ejecucion unico\n");
     return NULL;
 
 }
@@ -156,7 +147,7 @@ int main(int argc,char*argv[]){
   int f,c;
   if (argc != 3 )
    {
-     
+
      printf("\nUsar: %s n\n  n: Dimension de la matriz (nxn X nxn)-----Hilos\n", argv[0]);
      exit(1);
    }else{
@@ -181,12 +172,12 @@ int main(int argc,char*argv[]){
     BE=(double*)malloc(sizeof(double)*N*N);
     bD=(double*)malloc(sizeof(double)*N*N);
     UF=(double*)malloc(sizeof(double)*N*N);
-    
+
     //variables_Promedios=(double*)malloc(sizeof(double)*4);
      if (pthread_mutex_init(&p1, NULL) != 0){
         printf("\n mutex Fallo\n");
     }
-    
+
      if (pthread_mutex_init(&p2, NULL) != 0){
         printf("\n mutex Fallo\n");
     }
@@ -210,7 +201,7 @@ int main(int argc,char*argv[]){
      if (pthread_mutex_init(&p7, NULL) != 0){
         printf("\n mutex Fallo\n");
     }
-    
+
     double num = 1;
     //INICIALIZACION DE LAS MATRICES
     for(f=0;f<N;f++){
@@ -252,10 +243,10 @@ int main(int argc,char*argv[]){
      imprimeMatriz(E,0);
      imprimeMatriz(F,0);
      */
-    
+
     // SACO PROMEDIOS QUE NECESITO
     // PROMEDIO b
-    
+
 temp=0;
 temp1=0;
 temp2=0;
@@ -282,10 +273,12 @@ temp2=0;
     u=(temp1/(N*N));
     l=(temp2/(N*N));
     ul=u*l;
-    printf("Los valores son b = %f0.0 , u=%f0.0 , l = %f0.0 , ul=%f0.0",b,u,l,ul);
+    //printf("Los valores son b = %f0.0 , u=%f0.0 , l = %f0.0 , ul=%f0.0",b,u,l,ul);
 
   pthread_t misHilos[T]; // areglo de hilos para ejecutar
   int ID[T];
+  gettimeofday(&tv,NULL);
+  sec = tv.tv_sec + tv.tv_usec/1000000.0;
   for(int id=0;id<T;id++){
     ID[id] = id;
     pthread_create(&misHilos[id], NULL, procesoFuncion,(void *)&ID[id]);
@@ -295,10 +288,12 @@ temp2=0;
     pthread_join(misHilos[id],NULL);
   }
 
-   
-printf("\nResultado final");
+  gettimeofday(&tv,NULL);
+  timetick = tv.tv_sec + tv.tv_usec/1000000.0;
+   printf("Tiempo en segundos %f\n", timetick - sec);
+//printf("\nResultado final");
 
-imprimeMatriz(M,1);
+//imprimeMatriz(M,1);
 
 pthread_mutex_destroy(&p1);
 pthread_mutex_destroy(&p2);
