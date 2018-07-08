@@ -126,103 +126,118 @@ struct timeval tv;
     temp1=0;
     temp2=0;
 
-    #pragma omp parallel for reduction(+:temp) private(i,j)
-    for(int i=0;i<N;i++){
-          for(int j=0;j<N;j++){
-                temp+=B[i*N+j];
+    #pragma omp parallel
+    {
+        #pragma omp for reduction(+:temp1) private(i,j) schedule(dynamic,T)
+        for(i=0;i<N;i++){
+            for (j=i;j<N;j++){
+                temp1+=U[i+((j*(j+1))/2)];
             }
-    }
+        }
+        #pragma omp parallel for reduction(+:temp2) private(i,j) schedule(dynamic,T)
+        for(i=0;i<N;i++){
+            for(j=0;j<(i+1);j++)
+            {
+                temp2+=L[j+((i*(i+1)/2))];
+            }
+        }
 
-    #pragma omp for nowait schedule(dynamic,T)
+        #pragma omp for reduction(+:temp) private(i,j)
+        for(i=0;i<N;i++){
+            for(j=0;j<N;j++){
+                    temp+=B[i*N+j];
+                }
+        }
+
+        #pragma omp single
+        {
+            b=(temp/(N*N));
+            u=(temp1/(N*N));
+            l=(temp2/(N*N));
+            ul=u*l;
+        }
+        printf("%f \n",ul);
+        #pragma omp for nowait private(i,j,k) 
+        for(int i=0;i<N;i++){
+            for(int j=0;j<N;j++){
+                for(k = 0;k<N;k++){
+                    ulAAtrans[i*N+j] +=ul*A[i*N+k]*A2[k*N+j];
+                }
+            }
+        }
+
+        //L es inferior, recorrido parcial
+        #pragma omp for nowait reduction(+:temp1) private(i,j,k) schedule(dynamic,T)
+        for(int i=0;i<N;i++){
+            for(int j=0;j<N;j++){
+                temp1 = 0;
+                for(k = 0;k<i+1;k++){
+                    temp1 +=b*L[k+((i*(i+1)/2))]*B[j*N+k];
+                }
+                bL[i*N+j] = temp1;
+            }
+        }
+
+        //U es superior
+        #pragma omp for nowait reduction(+:temp) private(i,j,k) schedule(dynamic,T)
+        for(i=0;i<N;i++){
+            for(j=0;j<N;j++){
+                temp = 0;
+                for(k = 0;k<j+1;k++){
+                    temp +=b*D[i*N+k]*U[k+((j*(j+1))/2)];
+                }
+                bD[i*N+j] = temp;
+            }
+        }
+
+        #pragma omp for nowait private(i,j,k)
+        for(int i=0;i<N;i++){
+            for(int j=0;j<N;j++){
+                for(k = 0;k<N;k++){
+                parcialC[i*N+j] += b*ulAAtrans[i*N+k]*C[k*N+j];
+                }
+            }
+        }
+
+        #pragma omp for nowait private(i,j,k)
+        for(i=0;i<N;i++){
+            for(j=0;j<N;j++){
+                for(k = 0;k<N;k++){
+                BE[i*N+j] += bL[i*N+k]*E[k*N+j];
+                }
+            }
+        }
+
+        #pragma omp for nowait private(i,j,k)
+        for(i=0;i<N;i++){
+            for(j=0;j<N;j++){
+                for(k = 0;k<N;k++){
+                UF[i*N+j] += bD[i*N+k]*F[k*N+j];
+                }
+            }
+        }
+
+        //Resultado Final
+        #pragma omp for private(i,j,k)
+        for(i=0;i<N;i++){
+            for(j=0;j<N;j++){
+                for(k = 0;k<N;k++){
+                    M[i*N+j] = parcialC[i*N+j]+BE[i*N+j]+UF[i*N+j];
+                }
+            }
+        }
+
+    }
+        
+    gettimeofday(&tv,NULL);
+    timetick = tv.tv_sec + tv.tv_usec/1000000.0;
+    printf("Tiempo en segundos %f\n", timetick - sec);
     for(i=0;i<N;i++){
-        for (j=i;j<N;j++){
-            temp1+=U[i+((j*(j+1))/2)];
+        for(j=0;j<N;j++){
+            printf("%f  ",M[i*N+j]);
         }
+        printf(" \n");
     }
-    #pragma omp for nowait schedule(dynamic,T)
-	for(i=0;i<N;i++){
-		for(j=0;j<(i+1);j++)
-		{
-			temp2+=L[j+((i*(i+1)/2))];
-		}
-	}
-
-    b=(temp/(N*N));
-    u=(temp1/(N*N));
-    l=(temp2/(N*N));
-    ul=u*l;
-
-    #pragma omp for nowait schedule(dynamic,T)
-    for(int i=0;i<N;i++){
-        for(int j=0;j<N;j++){
-            for(k = 0;k<N;k++){
-                ulAAtrans[i*N+j]+=ul*A[i*N+k]*A2[k*N+j];
-            }
-        }
-    }
-
-    //L es inferior, recorrido parcial
-    #pragma omp for nowait schedule(dynamic,T)
-    for(int i=0;i<N;i++){
-        for(int j=0;j<N;j++){
-            for(k = 0;k<i+1;k++){
-                bL[i*N+j] +=b*L[k+((i*(i+1)/2))]*B[j*N+k];
-            }
-
-        }
-    }
-
-    //U es superior
-    #pragma omp for nowait schedule(dynamic,T)
-    for(int i=0;i<N;i++){
-        for(int j=0;j<N;j++){
-            for(k = 0;k<j+1;k++){
-              bD[i*N+j] +=b*D[i*N+k]*U[k+((j*(j+1))/2)];
-
-            }
-        }
-    }
-
-    #pragma omp for nowait schedule(dynamic,T)
-    for(int i=0;i<N;i++){
-        for(int j=0;j<N;j++){
-            for(k = 0;k<N;k++){
-              parcialC[i*N+j] += b*ulAAtrans[i*N+k]*C[k*N+j];
-            }
-        }
-    }
-
-    #pragma omp for nowait schedule(dynamic,T)
-    for(int i=0;i<N;i++){
-        for(int j=0;j<N;j++){
-            for(k = 0;k<N;k++){
-              BE[i*N+j] += bL[i*N+k]*E[k*N+j];
-            }
-        }
-    }
-
-#pragma omp for nowait schedule(dynamic,T)
-     for(int i=0;i<N;i++){
-        for(int j=0;j<N;j++){
-            for(k = 0;k<N;k++){
-              UF[i*N+j] += bD[i*N+k]*F[k*N+j];
-            }
-        }
-    }
-
-    //Resultado Final
-    #pragma omp for nowait schedule(dynamic,T)
-    for(int i=0;i<N;i++){
-        for(int j=0;j<N;j++){
-            for(k = 0;k<N;k++){
-                M[i*N+j] = parcialC[i*N+j]+BE[i*N+j]+UF[i*N+j];
-            }
-        }
-     }
-     gettimeofday(&tv,NULL);
-     timetick = tv.tv_sec + tv.tv_usec/1000000.0;
-      printf("Tiempo en segundos %f\n", timetick - sec);
-
 free(A);
 free(B);
 free(C);

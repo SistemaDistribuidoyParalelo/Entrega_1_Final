@@ -234,7 +234,12 @@ int main(int argc,char*argv[]){
      gettimeofday(&tv,NULL);
      timetick = tv.tv_sec + tv.tv_usec/1000000.0;
       printf("Tiempo en segundos %f\n", timetick - sec);
-
+    for(i=0;i<N;i++){
+        for(j=0;j<N;j++){
+            printf("%f  ",M[i*N+j]);
+        }
+    printf(" \n");
+  }
 free(A);
 free(B);
 free(C);

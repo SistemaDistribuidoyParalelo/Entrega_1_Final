@@ -22,13 +22,7 @@ struct timeval tv;
 double u,l,b,ul;
 double temp,temp1,temp2;
 pthread_mutex_t p1;
-pthread_mutex_t p2;
-pthread_mutex_t p3;
-pthread_mutex_t p4;
-pthread_mutex_t p5;
-pthread_mutex_t p6;
-pthread_mutex_t p7;
-
+pthread_barrier_t barr1,barr2;
 //DECLARACION DE FUNCIONES UTILIZADAS EN EL PROGRAMA
 
 
@@ -66,8 +60,30 @@ void *procesoFuncion(void *arg){
     //printf("el Inicio = %d \n",inicio );
   //  printf("el Parcial = %d \n",parcial );
 
+    for(i=inicio;i<parcial;i++){
+        for(j=0;j<N;j++){
+            temp+=B[i*N+j];
+        }
+    }
 
-pthread_mutex_lock(&p1);
+    for(i=inicio;i<parcial;i++){
+        for(j=i;j<N;j++){
+            temp1+=U[i+((j*(j+1))/2)];
+        }
+    }
+
+	for(i=inicio;i<parcial;i++){
+		for(j=0;j<(i+1);j++){
+		    temp2+=L[j+((i*(i+1)/2))];
+		}
+	}
+
+    pthread_barrier_wait(&barr1);   
+    b=(temp/(N*N));
+    u=(temp1/(N*N));
+    l=(temp2/(N*N));
+    ul=u*l;
+
     for(i=inicio;i<parcial;i++){
         for(j=0;j<N;j++){
             for(k = 0;k<N;k++){
@@ -75,10 +91,7 @@ pthread_mutex_lock(&p1);
             }
         }
     }
-pthread_mutex_unlock(&p1);
 
-    //L es inferior, recorrido parcial
-pthread_mutex_lock(&p2);
     for(i=inicio;i<parcial;i++){
         for(j=0;j<N;j++){
             for(k = 0;k<i+1;k++){
@@ -87,10 +100,7 @@ pthread_mutex_lock(&p2);
 
         }
     }
-    pthread_mutex_unlock(&p2);
 
-    //U es superior
-pthread_mutex_lock(&p3);
     for(i=inicio;i<parcial;i++){
         for(j=0;j<N;j++){
             for(k = 0;k<j+1;k++){
@@ -99,8 +109,7 @@ pthread_mutex_lock(&p3);
             }
         }
     }
-pthread_mutex_unlock(&p3);
-pthread_mutex_lock(&p4);
+
     for(i=inicio;i<parcial;i++){
         for(j=0;j<N;j++){
             for(k = 0;k<N;k++){
@@ -108,8 +117,7 @@ pthread_mutex_lock(&p4);
             }
         }
     }
-    pthread_mutex_unlock(&p4);
-    pthread_mutex_lock(&p5);
+
     for(i=inicio;i<parcial;i++){
         for(j=0;j<N;j++){
             for(k = 0;k<N;k++){
@@ -117,18 +125,16 @@ pthread_mutex_lock(&p4);
             }
         }
     }
-    pthread_mutex_unlock(&p5);
-    pthread_mutex_lock(&p6);
-     for(i=inicio;i<parcial;i++){
+    
+    for(i=inicio;i<parcial;i++){
         for(j=0;j<N;j++){
             for(k = 0;k<N;k++){
-              UF[i*N+j] += bD[i*N+k]*F[k*N+j];
+                UF[i*N+j] += bD[i*N+k]*F[k*N+j];
             }
         }
     }
-pthread_mutex_unlock(&p6);
-    //Resultado Final
-    pthread_mutex_lock(&p7);
+
+    pthread_barrier_wait(&barr2);
     for(i=inicio;i<parcial;i++){
         for(j=0;j<N;j++){
             for(k = 0;k<N;k++){
@@ -136,8 +142,9 @@ pthread_mutex_unlock(&p6);
             }
         }
      }
-     pthread_mutex_unlock(&p7);
-  //  printf("Termino el Hilo d ejecucion unico\n");
+    
+    
+    //printf("Termino el Hilo d ejecucion unico\n");
     return NULL;
 
 }
@@ -145,6 +152,10 @@ pthread_mutex_unlock(&p6);
 //MAIN
 int main(int argc,char*argv[]){
   int f,c;
+  temp=0;
+  temp1=0;
+  temp2=0;
+    
   if (argc != 3 )
    {
 
@@ -173,36 +184,19 @@ int main(int argc,char*argv[]){
     bD=(double*)malloc(sizeof(double)*N*N);
     UF=(double*)malloc(sizeof(double)*N*N);
 
-    //variables_Promedios=(double*)malloc(sizeof(double)*4);
-     if (pthread_mutex_init(&p1, NULL) != 0){
-        printf("\n mutex Fallo\n");
+    // Barrier initialization
+    if(pthread_barrier_init(&barr1, NULL, T))
+    {
+        printf("Could not create a barrier\n");
+        return -1;
     }
-
-     if (pthread_mutex_init(&p2, NULL) != 0){
-        printf("\n mutex Fallo\n");
+    // Barrier initialization
+    if(pthread_barrier_init(&barr2, NULL, T))
+    {
+        printf("Could not create a barrier\n");
+        return -1;
     }
-
-     if (pthread_mutex_init(&p3, NULL) != 0){
-        printf("\n mutex Fallo\n");
-    }
-
-     if (pthread_mutex_init(&p4, NULL) != 0){
-        printf("\n mutex Fallo\n");
-    }
-
-     if (pthread_mutex_init(&p5, NULL) != 0){
-        printf("\n mutex Fallo\n");
-    }
-
-     if (pthread_mutex_init(&p6, NULL) != 0){
-        printf("\n mutex Fallo\n");
-    }
-
-     if (pthread_mutex_init(&p7, NULL) != 0){
-        printf("\n mutex Fallo\n");
-    }
-
-    double num = 1;
+ 
     //INICIALIZACION DE LAS MATRICES
     for(f=0;f<N;f++){
      for(c=0;c<N;c++){
@@ -212,7 +206,7 @@ int main(int argc,char*argv[]){
         bD[f*N+c] = 0;
         BE[f*N+c] = 0;
         UF[f*N+c] = 0;
-        A[f*N+c] = num;
+        A[f*N+c] = 1;
 	    A2[c*N+f] = A[f*N+c]; //Transpuesta poner para el tiempo
         B[f*N+c]=1; //ORDENXFILAS
         C[c*N+f]=1; //ORDENXCOLUMNAS
@@ -220,18 +214,18 @@ int main(int argc,char*argv[]){
         E[c*N+f]=1; //ORDENXCOLUMNAS
         F[c*N+f]=1; //ORDENXCOLUMNAS
         //Matrices triangulares, PENSAR EN ARMAR LA TRANSPUESTA
-			  if (f > c){
-				L[c+((f*(f+1))/2)] = 1; //Almaceno L por filas
-				//U[i * N + j] = 0;
-		  	}
-			  else if (f < c){
-				//L[i * N + j] = 0;
-				U[f+((c*(c+1))/2)] = 1; //Almaceno U por columnas
-			  }
-			else{
-				L[c+((f*(f+1))/2)] = 1;
-				U[f+((c*(c+1))/2)] = 1;
-			}
+        if (f > c){
+        L[c+((f*(f+1))/2)] = 1; //Almaceno L por filas
+        //U[i * N + j] = 0;
+            }
+        else if (f < c){
+        //L[i * N + j] = 0;
+        U[f+((c*(c+1))/2)] = 1; //Almaceno U por columnas
+            }
+        else{
+            L[c+((f*(f+1))/2)] = 1;
+            U[f+((c*(c+1))/2)] = 1;
+        }
      }
     }
     /*
@@ -247,32 +241,6 @@ int main(int argc,char*argv[]){
     // SACO PROMEDIOS QUE NECESITO
     // PROMEDIO b
 
-temp=0;
-temp1=0;
-temp2=0;
-  for(int i=0;i<N;i++){
-          for(int j=0;j<N;j++){
-              temp+=B[i*N+j];
-            }
-    }
-
-    for(int i=0;i<N;i++){
-        for (int j=i;j<N;j++){
-            temp1+=U[i+((j*(j+1))/2)];
-        }
-    }
-
-	for(int i=0;i<N;i++){
-		for(int j=0;j<(i+1);j++)
-		{
-			temp2+=L[j+((i*(i+1)/2))];
-		}
-	}
-
-    b=(temp/(N*N));
-    u=(temp1/(N*N));
-    l=(temp2/(N*N));
-    ul=u*l;
     //printf("Los valores son b = %f0.0 , u=%f0.0 , l = %f0.0 , ul=%f0.0",b,u,l,ul);
 
   pthread_t misHilos[T]; // areglo de hilos para ejecutar
@@ -290,18 +258,15 @@ temp2=0;
 
   gettimeofday(&tv,NULL);
   timetick = tv.tv_sec + tv.tv_usec/1000000.0;
-   printf("Tiempo en segundos %f\n", timetick - sec);
+  printf("Tiempo en segundos %f\n", timetick - sec);
 //printf("\nResultado final");
 
 //imprimeMatriz(M,1);
 
-pthread_mutex_destroy(&p1);
-pthread_mutex_destroy(&p2);
-pthread_mutex_destroy(&p3);
-pthread_mutex_destroy(&p4);
-pthread_mutex_destroy(&p5);
-pthread_mutex_destroy(&p6);
-pthread_mutex_destroy(&p7);
+//pthread_mutex_destroy(&p1);
+pthread_barrier_destroy(&barr1);
+pthread_barrier_destroy(&barr2);
+
 free(A);
 free(A2);
 free(B);
